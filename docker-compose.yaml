@@ -88,6 +88,7 @@ services:
       - FLOWER_PORT=5555
     depends_on:
       - rabbitmq
+      - celery_worker
 
           
 volumes:

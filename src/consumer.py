@@ -4,7 +4,9 @@ from celery_app import update_database
 
 # Establish a connection
 connection = pika.BlockingConnection(
-    pika.ConnectionParameters(os.getenv("RABBITMQ_HOST"))
+    pika.ConnectionParameters(os.getenv("RABBITMQ_HOST")),
+    blocked_connection_timeout=600,
+    heartbeat=300,
 )
 channel = connection.channel()
 
