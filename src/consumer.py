@@ -16,6 +16,8 @@ channel.queue_declare(queue=queue_name, durable=True)
 # Define a callback function to process messages
 def callback(ch, method, properties, body):
     update_database.delay(body)
+    print(" [x] Received %r" % body)
+    ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
 # Start consuming messages

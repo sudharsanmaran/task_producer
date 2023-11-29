@@ -71,6 +71,13 @@ services:
       context: ./src/worker
       dockerfile: Dockerfile
     command: python3 worker.py
+    restart: on-failure
+    depends_on:
+      - rabbitmq
+    environment:
+      - OMP_NUM_THREADS=1
+    volumes:
+      - modeldata:/app
 
   flower:
     image: mher/flower
@@ -85,3 +92,4 @@ services:
           
 volumes:
   pgdata:
+  modeldata:
