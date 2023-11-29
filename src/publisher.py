@@ -3,7 +3,7 @@ import pika
 import os
 
 rabbitmq_host = os.getenv("RABBITMQ_HOST", "localhost")
-request_queue = os.getenv("REQUEST_QUEUE", "image_requests")
+request_queue = os.getenv("REQUEST_QUEUE", "image_request")
 
 
 def send_to_rabbitmq(obj: dict):

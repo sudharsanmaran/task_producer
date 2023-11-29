@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 
 from celery import Celery
 
@@ -8,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 
 logging.info("Celery worker not started")
 
-app = Celery("tasks", broker="amqp://guest:guest@localhost//")
+app = Celery("tasks", broker=os.getenv("RABITMQ_BROKER_URL"))
 
 logging.info("Celery worker started")
 
