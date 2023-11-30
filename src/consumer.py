@@ -1,34 +1,39 @@
 import os
-import pika
+import asyncio
+import aio_pika
 from celery_app import update_database
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Establish a connection
-connection = pika.BlockingConnection(
-    pika.ConnectionParameters(
-        host="rabbitmq",
-        heartbeat=600,
-    )
-)
-channel = connection.channel()
-
-queue_name = 'image_response'
-# Declare the same durable queue
-print(queue_name, "queue name &&&&&&&&&&&&&&&&")
-channel.queue_declare(queue=queue_name, durable=True)
+rabbitmq_host = os.getenv("RABBITMQ_HOST", "localhost")
+queue_name = "image_response"
 
 
-# Define a callback function to process messages
-def callback(ch, method, properties, body):
-    update_database.delay(body)
-    print(" [x] Received %r" % body)
-    ch.basic_ack(delivery_tag=method.delivery_tag)
+async def on_response(message: aio_pika.IncomingMessage):
+    async with message.process():
+        update_database.delay(message.body.decode())
+        print(" [x] Received %r" % message.body)
 
 
-# Start consuming messages
-channel.basic_consume(queue=queue_name, on_message_callback=callback)
+async def main(loop):
+    connection = await aio_pika.connect_robust(f"amqp://{rabbitmq_host}", loop=loop)
 
+    async with connection:
+        # Creating channel
+        channel = await connection.channel()
+
+        # Declaring queue
+        queue = await channel.declare_queue(queue_name, durable=True)
+
+        # Start consuming messages
+        await queue.consume(on_response)
+
+
+loop = asyncio.get_event_loop()
+loop.create_task(main(loop))
+
+# we enter a never-ending loop that waits for data and
+# runs callbacks whenever necessary.
 print(" [*] Waiting for messages. To exit press CTRL+C")
-channel.start_consuming()
+loop.run_forever()
