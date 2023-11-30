@@ -6,7 +6,6 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672" # For RabbitMQ management plugin
-    hostname: rabbitmq
 
   postgres:
     image: postgres:latest
@@ -61,12 +60,13 @@ services:
     restart: on-failure
     depends_on:
       - rabbitmq
+      - celery_worker
     environment:
       - RABBITMQ_HOST=rabbitmq
       - RESPOSE_QUEUE_NAME=image_response
 
   ai_model_worker:
-    image: ai_model_worker:latest
+    image: landingresgistry.azurecr.io/eagle-bot-image-gen-model:V1.0.0
     build:
       context: ./src/worker
       dockerfile: Dockerfile

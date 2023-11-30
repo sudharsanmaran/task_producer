@@ -8,7 +8,10 @@ request_queue = os.getenv("REQUEST_QUEUE", "image_request")
 
 def send_to_rabbitmq(obj: dict):
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host=rabbitmq_host)
+        pika.ConnectionParameters(
+            host=rabbitmq_host,
+            heartbeat=900,
+        )
     )
     channel = connection.channel()
     channel.queue_declare(queue=request_queue, durable=True)
@@ -16,7 +19,7 @@ def send_to_rabbitmq(obj: dict):
     channel.basic_publish(
         exchange="",
         routing_key=request_queue,
-        body=json.dumps(obj).encode(),
+        body=json.dumps(obj),
         properties=pika.BasicProperties(
             reply_to="",
             correlation_id=corr_id,

@@ -1,17 +1,22 @@
 import os
 import pika
 from celery_app import update_database
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Establish a connection
 connection = pika.BlockingConnection(
-    pika.ConnectionParameters(os.getenv("RABBITMQ_HOST")),
-    blocked_connection_timeout=600,
-    heartbeat=300,
+    pika.ConnectionParameters(
+        host="rabbitmq",
+        heartbeat=600,
+    )
 )
 channel = connection.channel()
 
-queue_name = os.getenv("RESPOSE_QUEUE_NAME")
+queue_name = 'image_response'
 # Declare the same durable queue
+print(queue_name, "queue name &&&&&&&&&&&&&&&&")
 channel.queue_declare(queue=queue_name, durable=True)
 
 
