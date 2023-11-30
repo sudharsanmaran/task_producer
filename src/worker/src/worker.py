@@ -16,8 +16,8 @@ load_dotenv()
 model_id = os.getenv("MODLE_ID")
 scheduler = EulerDiscreteScheduler.from_pretrained(model_id, subfolder="scheduler")
 pipe = StableDiffusionPipeline.from_pretrained(
-    model_id, scheduler=scheduler, torch_dtype=torch.float16
-).to("cuda")
+    model_id, scheduler=scheduler, torch_dtype=torch.float32
+).to("cpu")
 
 # RabbitMQ setup
 rabbitmq_host = os.getenv("RABBITMQ_HOST", "localhost")  # Use environment variable
