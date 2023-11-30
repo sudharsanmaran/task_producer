@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 
 logging.info("Celery worker not started")
 
-app = Celery("tasks", broker=os.getenv("RABITMQ_BROKER_URL"))
+app = Celery("tasks", broker=os.getenv("RABBITMQ_BROKER_URL"))
 
 logging.info("Celery worker started")
 

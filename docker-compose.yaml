@@ -48,7 +48,7 @@ services:
       - rabbitmq
       - postgres
     environment:
-      - BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+      - RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
 
   result_consumer:
     build:
