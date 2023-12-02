@@ -1,27 +1,32 @@
 import json
 import os
-import aio_pika
+import pika
 
-rabbitmq_host = os.getenv("RABBITMQ_HOST", "localhost")
+rabbitmq_host = "rabbitmq"
 request_queue = os.getenv("REQUEST_QUEUE", "image_request")
-response_queue = os.getenv("RESPONSE_QUEUE", "image_response")
 
 
-async def send_to_rabbitmq(obj: dict):
-    connection = await aio_pika.connect_robust(f"amqp://{rabbitmq_host}")
+def send_to_rabbitmq(obj: dict):
+    connection = None
+    try:
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host=rabbitmq_host)
+        )
 
-    async with connection:
-        channel = await connection.channel()
-
-        # Declare response queue
-        await channel.declare_queue(response_queue, durable=True)
+        channel = connection.channel()
 
         message_body = json.dumps(obj)
-        message = aio_pika.Message(
-            body=message_body.encode(),
-            delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+        properties = pika.BasicProperties(
+            delivery_mode=2,
             correlation_id=obj["id"],
-            reply_to=response_queue,
         )  # Set reply_to to response queue name
 
-        await channel.default_exchange.publish(message, routing_key=request_queue)
+        channel.basic_publish(
+            exchange="",
+            routing_key=request_queue,
+            body=message_body,
+            properties=properties,
+        )
+    finally:
+        if connection and connection.is_open:
+            connection.close()

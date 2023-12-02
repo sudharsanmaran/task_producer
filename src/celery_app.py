@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 
 logging.info("Celery worker not started")
 
-app = Celery("tasks", broker=os.getenv("RABBITMQ_BROKER_URL"))
+app = Celery("tasks", broker=os.getenv('RABBITMQ_BROKER_URL'))
 
 logging.info("Celery worker started")
 
@@ -22,12 +22,13 @@ def update_database(message):
 
     # Parse the message and extract the data to be updated in the database
     data = json.loads(message)
-    print(data, "celery worker")
     session = ScopedSession()
     entry_service = EntryService(session)
     entry = entry_service.get_by_primary_key(data["id"])
+    if entry is None:
+        logging.error(f"Entry with id {data['id']} not found")
+        return
     entry.response_data = data["response"]
     entry.status = Status.COMPLETED
     entry_service.update(entry)
-    print(data, "celery worker", entry)
     logging.info(f"Updating entry {entry} with status {data}")

@@ -26,7 +26,7 @@ async def generate_image(
         ).model_dump()
     )
     img_gen_request = {"id": str(entry.id), "request": request.model_dump()}
-    await send_to_rabbitmq(img_gen_request)
+    send_to_rabbitmq(img_gen_request)
     return {
         "message": "Image generation request submitted successfully",
         "id": str(entry.id),

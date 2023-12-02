@@ -2,7 +2,7 @@ import json
 import pika
 import os
 
-rabbitmq_host = os.getenv("RABBITMQ_HOST", "localhost")
+rabbitmq_host = os.getenv("RABBITMQ_HOST", "rabbitmq")
 response_queue = os.getenv("RESPONSE_QUEUE", "image_response")
 
 
@@ -16,7 +16,7 @@ def send_image_response_to_rabbitmq(obj: dict):
     channel.basic_publish(
         exchange="",
         routing_key=response_queue,
-        body=json.dumps(obj).encode(),
+        body=json.dumps(obj),
         properties=pika.BasicProperties(
             reply_to="",
             correlation_id=corr_id,
@@ -28,6 +28,6 @@ def send_image_response_to_rabbitmq(obj: dict):
 
 
 send_image_response_to_rabbitmq({
-    "id": "0ec674af-2366-4c86-9f91-147bc633d443",
+    "id": "26b7e94d-de42-4c23-9ba4-c65a7429e00f",
     "response": ['jhcbdbc', 'jcxvjdcbdjb'],
 })

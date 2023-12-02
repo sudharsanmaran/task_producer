@@ -1,6 +1,7 @@
 accelerate==0.24.1
 azure-core==1.29.5
 azure-storage-blob==12.19.0
+celery==5.3.6
 certifi==2023.11.17
 cffi==1.16.0
 charset-normalizer==3.3.2
@@ -38,9 +39,3 @@ transformers==4.35.2
 typing_extensions==4.8.0
 urllib3==2.1.0
 zipp==3.17.0
-aio-pika==9.3.1
-aiormq==6.7.7
-idna==3.6
-multidict==6.0.4
-pamqp==3.2.1
-yarl==1.9.3

@@ -84,3 +84,5 @@ archive.zip
 #prod compose file
 deployment-docker-compose.yml
 
+alembic/versions/*
+
