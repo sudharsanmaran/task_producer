@@ -34,7 +34,7 @@ async def generate_image(
 
 
 @img_router.get("/image/{request_id}")
-async def get_image(request_id: uuid.UUID, service=Depends(get_entry_service)) -> List:
+async def get_image(request_id: uuid.UUID, service=Depends(get_entry_service)) -> dict:
     # Todo: Add this to the service and update
     db_image_request = service.get_by_primary_key(request_id)
     if db_image_request is None:
