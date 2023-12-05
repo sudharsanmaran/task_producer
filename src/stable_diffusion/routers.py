@@ -34,14 +34,14 @@ async def generate_image(
 
 
 @img_router.get("/image/{request_id}")
-async def get_image(request_id: uuid.UUID, service=Depends(get_entry_service)) -> dict:
+async def get_image(request_id: uuid.UUID, service=Depends(get_entry_service)):
     # Todo: Add this to the service and update
     db_image_request = service.get_by_primary_key(request_id)
     if db_image_request is None:
         raise HTTPException(status_code=404, detail="Image request not found")
     if db_image_request.status != Status.COMPLETED.name:
         raise HTTPException(
-            status_code=400,
+            status_code=102,
             detail="Image generation request is still processing, try again later",
         )
     return db_image_request.response_data
