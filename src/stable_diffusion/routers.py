@@ -1,4 +1,3 @@
-from typing import List
 import uuid
 from fastapi import Depends, HTTPException
 from fastapi.routing import APIRouter
@@ -6,6 +5,7 @@ from src.publisher import send_to_rabbitmq
 from src.stable_diffusion.dependencies import get_entry_service
 from src.stable_diffusion.constants import Status
 from .models import Entry
+from fastapi.responses import JSONResponse
 
 from .schemas import EntryBase, ImageRequest
 
@@ -35,13 +35,17 @@ async def generate_image(
 
 @img_router.get("/image/{request_id}")
 async def get_image(request_id: uuid.UUID, service=Depends(get_entry_service)):
-    # Todo: Add this to the service and update
     db_image_request = service.get_by_primary_key(request_id)
     if db_image_request is None:
         raise HTTPException(status_code=404, detail="Image request not found")
     if db_image_request.status != Status.COMPLETED.name:
-        raise HTTPException(
-            status_code=102,
-            detail="Image generation request is still processing, try again later",
-        )
-    return db_image_request.response_data
+        response = {
+            "detail": "Image generation request is still processing, try again later",
+        }
+        return JSONResponse(status_code=202, content=response)
+    response = {
+        "message": "Image generation request completed successfully",
+        "id": str(db_image_request.id),
+        "response": db_image_request.response_data,
+    }
+    return JSONResponse(status_code=200, content=response)
