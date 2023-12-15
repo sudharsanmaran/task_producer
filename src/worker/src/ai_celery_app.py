@@ -6,6 +6,7 @@ from celery import Celery
 from io import BytesIO
 from dotenv import load_dotenv
 import pika
+from azure.storage.blob import BlobServiceClient
 
 load_dotenv()
 
@@ -45,8 +46,8 @@ def generate_image(
     model_id = os.getenv("MODLE_ID")
     scheduler = EulerDiscreteScheduler.from_pretrained(model_id, subfolder="scheduler")
     pipe = StableDiffusionPipeline.from_pretrained(
-        model_id, scheduler=scheduler, torch_dtype=torch.float32
-    ).to("cpu")
+        model_id, scheduler=scheduler, torch_dtype=torch.float16
+    ).to("cuda")
 
     print("Generating image for prompt: ", prompt)
     # Generate an image
@@ -66,12 +67,60 @@ def generate_image(
     return img_byte_arr
 
 
+# def upload_image_to_blob(byte_arr, name):
+#     # Connect to the blob storage account
+#     from azure.storage.blob import BlobServiceClient
+
+#     print("Uploading image to blob")
+#     connect_str = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')}"
+
+#     try:
+#         # Create the BlobServiceClient object which will be used to create a container client
+#         blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+#     except Exception as e:
+#         print(f"An exception occurred while creating BlobServiceClient: {e}")
+#         return
+
+#     # Get the existing container
+#     container_name = os.getenv("AZURE_CONTAINER_NAME")
+
+#     try:
+#         # Get the container client
+#         container_client = blob_service_client.get_container_client(container_name)
+#     except Exception as e:
+#         print(f"An exception occurred while getting container client: {e}")
+#         return
+
+#     try:
+#         # Create a blob client using the blob name
+#         blob_client = container_client.get_blob_client(name)
+
+#         # Upload image data to blob
+#         blob_client.upload_blob(byte_arr, overwrite=True)
+
+#         # Generate image URL
+#         image_url = blob_client.url
+
+#         # Print the image URL
+#         print(image_url, "image url")
+#         return image_url
+
+#     except Exception as e:
+#         print(f"An exception occurred while uploading the file: {e}")
+
 def upload_image_to_blob(byte_arr, name):
     # Connect to the blob storage account
-    from azure.storage.blob import BlobServiceClient
 
     print("Uploading image to blob")
     connect_str = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')}"
+
+    # Check the image format
+    image = Image.open(io.BytesIO(byte_arr))
+    
+    # Convert the image to PNG if it's not already
+    byte_arr = io.BytesIO()
+    image.save(byte_arr, format='PNG')
+    byte_arr = byte_arr.getvalue()
 
     try:
         # Create the BlobServiceClient object which will be used to create a container client
@@ -91,6 +140,10 @@ def upload_image_to_blob(byte_arr, name):
         return
 
     try:
+        # Ensure the name ends with .png
+        if not name.endswith('.png'):
+            name += '.png'
+
         # Create a blob client using the blob name
         blob_client = container_client.get_blob_client(name)
 
@@ -106,6 +159,7 @@ def upload_image_to_blob(byte_arr, name):
 
     except Exception as e:
         print(f"An exception occurred while uploading the file: {e}")
+
 
 
 def send_to_rabbitmq(obj, rabbitmq_host="rabbitmq", response_queue="image_response"):

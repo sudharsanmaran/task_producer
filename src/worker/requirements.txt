@@ -39,3 +39,4 @@ transformers==4.35.2
 typing_extensions==4.8.0
 urllib3==2.1.0
 zipp==3.17.0
+pillow==10.1.0

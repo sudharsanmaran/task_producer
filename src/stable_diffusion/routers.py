@@ -34,7 +34,12 @@ async def generate_image(
 
 
 @img_router.get("/image/{request_id}")
-async def get_image(request_id: uuid.UUID, service=Depends(get_entry_service)):
+async def get_image(request_id: str, service=Depends(get_entry_service)):
+    try:
+        request_id = uuid.UUID(request_id)
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"detail": str(e)})
+    
     db_image_request = service.get_by_primary_key(request_id)
     if db_image_request is None:
         raise HTTPException(status_code=404, detail="Image request not found")
