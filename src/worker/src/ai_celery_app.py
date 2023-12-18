@@ -42,24 +42,42 @@ def generate_image(
     prompt, height=512, width=512, num_inference_steps=50, guidance_scale=7.5
 ):
     import torch
-    from diffusers import StableDiffusionPipeline, EulerDiscreteScheduler
+    from diffusers import StableDiffusionPipeline, EulerDiscreteScheduler, DiffusionPipeline
     from diffusers.schedulers import DPMSolverMultistepScheduler
 
     # Initialize Stable Diffusion model
-    model_id = os.getenv("MODLE_ID")
-    scheduler = DPMSolverMultistepScheduler.from_pretrained(model_id, subfolder="scheduler")
-    pipe = StableDiffusionPipeline.from_pretrained(
-        model_id, scheduler=scheduler, torch_dtype=torch.float16
-    ).to("cuda")
+    base = DiffusionPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16", use_safetensors=True
+    )
+    base.to("cuda")
+    refiner = DiffusionPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-xl-refiner-1.0",
+        text_encoder_2=base.text_encoder_2,
+        vae=base.vae,
+        torch_dtype=torch.float16,
+        use_safetensors=True,
+        variant="fp16",
+    )
+    refiner.to("cuda")
 
-    print("Generating image for prompt: ", prompt)
-    # Generate an image
-    image = pipe(
-        prompt,
-        height=height,
-        width=width,
+    # Define how many steps and what % of steps to be run on each experts (80/20) here
+    n_steps = 40
+    high_noise_frac = 0.8
+
+    prompt = "A majestic lion jumping from a big stone at night"
+
+    # run both experts
+    image = base(
+        prompt=prompt,
         num_inference_steps=num_inference_steps,
-        guidance_scale=guidance_scale,
+        denoising_end=high_noise_frac,
+        output_type="latent",
+    ).images
+    image = refiner(
+        prompt=prompt,
+        num_inference_steps=num_inference_steps,
+        denoising_start=high_noise_frac,
+        image=image,
     ).images[0]
 
     # Convert image to bytes
