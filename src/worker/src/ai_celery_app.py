@@ -43,10 +43,11 @@ def generate_image(
 ):
     import torch
     from diffusers import StableDiffusionPipeline, EulerDiscreteScheduler
+    from diffusers.schedulers import DPMSolverMultistepScheduler
 
     # Initialize Stable Diffusion model
     model_id = os.getenv("MODLE_ID")
-    scheduler = EulerDiscreteScheduler.from_pretrained(model_id, subfolder="scheduler")
+    scheduler = DPMSolverMultistepScheduler.from_pretrained(model_id, subfolder="scheduler")
     pipe = StableDiffusionPipeline.from_pretrained(
         model_id, scheduler=scheduler, torch_dtype=torch.float16
     ).to("cuda")
