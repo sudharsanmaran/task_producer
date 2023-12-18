@@ -15,8 +15,8 @@ sslmode = "require"
 port = os.getenv("DB_PORT")
 
 # flake8: noqa
-# database_url = f"postgresql+psycopg://{username}:{password}@{host}:{port}/{database}?sslmode={sslmode}"
-database_url = f"postgresql+psycopg://{username}:{password}@{host}:{port}/{database}"
+database_url = f'postgresql+psycopg://{username}:{password}@{host}:{port}/{database}?sslmode={sslmode}'
+# database_url = f"postgresql+psycopg://{username}:{password}@{host}:{port}/{database}"
 
 engine = create_engine(database_url, pool_size=5, max_overflow=0)
 ScopedSession = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))

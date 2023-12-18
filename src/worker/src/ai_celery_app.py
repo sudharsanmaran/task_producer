@@ -1,3 +1,4 @@
+import io
 import os
 import json
 import logging
@@ -7,6 +8,7 @@ from io import BytesIO
 from dotenv import load_dotenv
 import pika
 from azure.storage.blob import BlobServiceClient
+from PIL import Image
 
 load_dotenv()
 
@@ -108,6 +110,7 @@ def generate_image(
 #     except Exception as e:
 #         print(f"An exception occurred while uploading the file: {e}")
 
+
 def upload_image_to_blob(byte_arr, name):
     # Connect to the blob storage account
 
@@ -116,10 +119,10 @@ def upload_image_to_blob(byte_arr, name):
 
     # Check the image format
     image = Image.open(io.BytesIO(byte_arr))
-    
+
     # Convert the image to PNG if it's not already
     byte_arr = io.BytesIO()
-    image.save(byte_arr, format='PNG')
+    image.save(byte_arr, format="PNG")
     byte_arr = byte_arr.getvalue()
 
     try:
@@ -141,8 +144,8 @@ def upload_image_to_blob(byte_arr, name):
 
     try:
         # Ensure the name ends with .png
-        if not name.endswith('.png'):
-            name += '.png'
+        if not name.endswith(".png"):
+            name += ".png"
 
         # Create a blob client using the blob name
         blob_client = container_client.get_blob_client(name)
@@ -159,7 +162,6 @@ def upload_image_to_blob(byte_arr, name):
 
     except Exception as e:
         print(f"An exception occurred while uploading the file: {e}")
-
 
 
 def send_to_rabbitmq(obj, rabbitmq_host="rabbitmq", response_queue="image_response"):
