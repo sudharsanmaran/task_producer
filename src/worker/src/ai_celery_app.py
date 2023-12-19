@@ -39,7 +39,12 @@ logger.info("Celery image generation worker started")
 
 
 def generate_image(
-    prompt, height=512, width=512, num_inference_steps=50, guidance_scale=7.5
+    prompt,
+    height=512,
+    width=512,
+    num_inference_steps=50,
+    guidance_scale=7.5,
+    negative_prompt=None,
 ):
     import torch
     from diffusers import (
@@ -79,6 +84,7 @@ def generate_image(
         height=height,
         width=width,
         guidance_scale=guidance_scale,
+        negative_prompt=negative_prompt,
     ).images
     image = refiner(
         prompt=prompt,
@@ -202,10 +208,11 @@ def handle_img_gen_request(request):
     width = request_data["width"]
     num_inference_steps = request_data["num_inference_steps"]
     guidance_scale = request_data["guidance_scale"]
+    negative_prompt = request_data["negative_prompt"]
 
     # Generate image URL
     byte_arr = generate_image(
-        prompt, height, width, num_inference_steps, guidance_scale
+        prompt, height, width, num_inference_steps, guidance_scale, negative_prompt
     )
 
     random_str = str(uuid.uuid4())

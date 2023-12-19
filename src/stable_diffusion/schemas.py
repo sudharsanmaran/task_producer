@@ -7,6 +7,7 @@ from typing import Optional
 
 class ImageRequest(BaseModel):
     prompt: str = Field(..., description="Prompt for image generation")
+    negative_prompt: Optional[str] = Field(None, description="Negative prompt")
     height: int = Field(
         1024, description="Max Height: Width: 1024x1024.", le=1024, ge=16
     )
@@ -16,7 +17,7 @@ class ImageRequest(BaseModel):
     num_inference_steps: int = Field(
         35, description="Number of denoising steps", le=50, ge=1
     )
-    guidance_scale: float = Field(7.5, description="", le=10, ge=1)
+    guidance_scale: float = Field(5, description="", le=10, ge=1)
     webhook_url: Optional[str] = Field(
         None, description="Webhook url to send result to"
     )
