@@ -87,6 +87,10 @@ def generate_image(
         image=image,
     ).images[0]
 
+    del pipe
+    del refiner
+    torch.cuda.empty_cache()
+
     # Convert image to bytes
     img_byte_arr = BytesIO()
     image.save(img_byte_arr, format="PNG")
