@@ -8,10 +8,10 @@ from typing import Optional
 class ImageRequest(BaseModel):
     prompt: str = Field(..., description="Prompt for image generation")
     height: int = Field(
-        512, description="Max Height: Width: 1024x1024.", le=1024, ge=16
+        1024, description="Max Height: Width: 1024x1024.", le=1024, ge=16
     )
     width: int = Field(
-        512, description="Max Height: Width: 1024x1024.", le=1024, ge=16
+        1024, description="Max Height: Width: 1024x1024.", le=1024, ge=16
     )
     num_inference_steps: int = Field(
         35, description="Number of denoising steps", le=50, ge=1
