@@ -46,14 +46,16 @@ def generate_image(
     from diffusers.schedulers import DPMSolverMultistepScheduler
 
     # Initialize Stable Diffusion model
-    base = DiffusionPipeline.from_pretrained(
+    pipe = DiffusionPipeline.from_pretrained(
         "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16", use_safetensors=True
     )
-    base.to("cuda")
+    pipe.to("cuda")
+    pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+
     refiner = DiffusionPipeline.from_pretrained(
         "stabilityai/stable-diffusion-xl-refiner-1.0",
-        text_encoder_2=base.text_encoder_2,
-        vae=base.vae,
+        text_encoder_2=pipe.text_encoder_2,
+        vae=pipe.vae,
         torch_dtype=torch.float16,
         use_safetensors=True,
         variant="fp16",
@@ -67,7 +69,7 @@ def generate_image(
     prompt = "A majestic lion jumping from a big stone at night"
 
     # run both experts
-    image = base(
+    image = pipe(
         prompt=prompt,
         num_inference_steps=num_inference_steps,
         denoising_end=high_noise_frac,
