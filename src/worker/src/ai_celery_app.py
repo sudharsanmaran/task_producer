@@ -68,11 +68,7 @@ def generate_image(
     )
     refiner.to("cuda")
 
-    # Define how many steps and what % of steps to be run on each experts (80/20) here
-    n_steps = 40
     high_noise_frac = 0.8
-
-    prompt = "A majestic lion jumping from a big stone at night"
 
     # run both experts
     image = pipe(
@@ -80,6 +76,9 @@ def generate_image(
         num_inference_steps=num_inference_steps,
         denoising_end=high_noise_frac,
         output_type="latent",
+        height=height,
+        width=width,
+        guidance_scale=guidance_scale,
     ).images
     image = refiner(
         prompt=prompt,
