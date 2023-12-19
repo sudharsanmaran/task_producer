@@ -42,15 +42,21 @@ def generate_image(
     prompt, height=512, width=512, num_inference_steps=50, guidance_scale=7.5
 ):
     import torch
-    from diffusers import StableDiffusionPipeline, EulerDiscreteScheduler, DiffusionPipeline
+    from diffusers import (
+        StableDiffusionPipeline,
+        EulerDiscreteScheduler,
+        DiffusionPipeline,
+    )
     from diffusers.schedulers import DPMSolverMultistepScheduler
 
     # Initialize Stable Diffusion model
     pipe = DiffusionPipeline.from_pretrained(
-        "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16", use_safetensors=True
+        "stabilityai/stable-diffusion-xl-base-1.0",
+        torch_dtype=torch.float16,
+        variant="fp16",
+        use_safetensors=True,
     )
     pipe.to("cuda")
-    pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
 
     refiner = DiffusionPipeline.from_pretrained(
         "stabilityai/stable-diffusion-xl-refiner-1.0",
@@ -88,48 +94,6 @@ def generate_image(
     img_byte_arr = img_byte_arr.getvalue()
 
     return img_byte_arr
-
-
-# def upload_image_to_blob(byte_arr, name):
-#     # Connect to the blob storage account
-#     from azure.storage.blob import BlobServiceClient
-
-#     print("Uploading image to blob")
-#     connect_str = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')}"
-
-#     try:
-#         # Create the BlobServiceClient object which will be used to create a container client
-#         blob_service_client = BlobServiceClient.from_connection_string(connect_str)
-#     except Exception as e:
-#         print(f"An exception occurred while creating BlobServiceClient: {e}")
-#         return
-
-#     # Get the existing container
-#     container_name = os.getenv("AZURE_CONTAINER_NAME")
-
-#     try:
-#         # Get the container client
-#         container_client = blob_service_client.get_container_client(container_name)
-#     except Exception as e:
-#         print(f"An exception occurred while getting container client: {e}")
-#         return
-
-#     try:
-#         # Create a blob client using the blob name
-#         blob_client = container_client.get_blob_client(name)
-
-#         # Upload image data to blob
-#         blob_client.upload_blob(byte_arr, overwrite=True)
-
-#         # Generate image URL
-#         image_url = blob_client.url
-
-#         # Print the image URL
-#         print(image_url, "image url")
-#         return image_url
-
-#     except Exception as e:
-#         print(f"An exception occurred while uploading the file: {e}")
 
 
 def upload_image_to_blob(byte_arr, name):
