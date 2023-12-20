@@ -38,6 +38,10 @@ app.conf.update(
 logger.info("Celery image generation worker started")
 
 
+class ImageGenerationError(Exception):
+    pass
+
+
 def generate_image(
     prompt,
     height=512,
@@ -54,48 +58,51 @@ def generate_image(
     )
     from diffusers.schedulers import DPMSolverMultistepScheduler
 
-    # Initialize Stable Diffusion model
-    pipe = DiffusionPipeline.from_pretrained(
-        "stabilityai/stable-diffusion-xl-base-1.0",
-        torch_dtype=torch.float16,
-        variant="fp16",
-        use_safetensors=True,
-    )
-    pipe.to("cuda")
+    try:
+        # Initialize Stable Diffusion model
+        pipe = DiffusionPipeline.from_pretrained(
+            "stabilityai/stable-diffusion-xl-base-1.0",
+            torch_dtype=torch.float16,
+            variant="fp16",
+            use_safetensors=True,
+        )
+        pipe.to("cuda")
 
-    refiner = DiffusionPipeline.from_pretrained(
-        "stabilityai/stable-diffusion-xl-refiner-1.0",
-        text_encoder_2=pipe.text_encoder_2,
-        vae=pipe.vae,
-        torch_dtype=torch.float16,
-        use_safetensors=True,
-        variant="fp16",
-    )
-    refiner.to("cuda")
+        refiner = DiffusionPipeline.from_pretrained(
+            "stabilityai/stable-diffusion-xl-refiner-1.0",
+            text_encoder_2=pipe.text_encoder_2,
+            vae=pipe.vae,
+            torch_dtype=torch.float16,
+            use_safetensors=True,
+            variant="fp16",
+        )
+        refiner.to("cuda")
 
-    high_noise_frac = 0.8
+        high_noise_frac = 0.8
 
-    # run both experts
-    image = pipe(
-        prompt=prompt,
-        num_inference_steps=num_inference_steps,
-        denoising_end=high_noise_frac,
-        output_type="latent",
-        height=height,
-        width=width,
-        guidance_scale=guidance_scale,
-        negative_prompt=negative_prompt,
-    ).images
-    image = refiner(
-        prompt=prompt,
-        num_inference_steps=num_inference_steps,
-        denoising_start=high_noise_frac,
-        image=image,
-    ).images[0]
+        image = pipe(
+            prompt=prompt,
+            num_inference_steps=num_inference_steps,
+            denoising_end=high_noise_frac,
+            output_type="latent",
+            height=height,
+            width=width,
+            guidance_scale=guidance_scale,
+            negative_prompt=negative_prompt,
+        ).images
+        image = refiner(
+            prompt=prompt,
+            num_inference_steps=num_inference_steps,
+            denoising_start=high_noise_frac,
+            image=image,
+        ).images[0]
+    except Exception as e:
+        raise ImageGenerationError(f'An exception occurred while generating image: {e}')
 
-    del pipe
-    del refiner
-    torch.cuda.empty_cache()
+    finally:
+        del pipe
+        del refiner
+        torch.cuda.empty_cache()
 
     # Convert image to bytes
     img_byte_arr = BytesIO()
@@ -211,9 +218,15 @@ def handle_img_gen_request(request):
     negative_prompt = request_data["negative_prompt"]
 
     # Generate image URL
-    byte_arr = generate_image(
-        prompt, height, width, num_inference_steps, guidance_scale, negative_prompt
-    )
+    try:
+        byte_arr = generate_image(
+            prompt, height, width, num_inference_steps, guidance_scale, negative_prompt
+        )
+    except ImageGenerationError as e:
+        logger.error(f"An exception occurred while generating image: {e}")
+        response_obj = {"response": None, "id": id, "status": "failed"}
+        send_to_rabbitmq(response_obj)
+        return
 
     random_str = str(uuid.uuid4())
     images_name = f"{os.getenv('BASE_NAME')}-{random_str}"
@@ -221,7 +234,7 @@ def handle_img_gen_request(request):
     # Upload image to blob
     image_url = upload_image_to_blob(byte_arr, images_name)
 
-    response_obj = {"response": image_url, "id": id}
+    response_obj = {"response": image_url, "id": id, "status": "completed"}
 
     send_to_rabbitmq(response_obj)
     return

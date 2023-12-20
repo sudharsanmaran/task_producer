@@ -88,21 +88,33 @@ async def generate_image(
 @img_router.get("/image/{request_id}")
 async def get_image(request_id: str, service=Depends(get_entry_service)):
     try:
-        request_id = uuid.UUID(request_id)
-    except ValueError as e:
-        return JSONResponse(status_code=400, content={"detail": str(e)})
+        valid_request_id = uuid.UUID(request_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid request ID format.")
 
-    db_image_request = service.get_by_primary_key(request_id)
+    db_image_request = service.get_by_primary_key(valid_request_id)
+
     if db_image_request is None:
-        raise HTTPException(status_code=404, detail="Image request not found")
-    if db_image_request.status != Status.COMPLETED.name:
-        response = {
-            "detail": "Image generation request is still processing, try again later",
+        raise HTTPException(status_code=404, detail="Image request not found.")
+
+    if db_image_request.status == Status.PROCESSING.name:
+        return JSONResponse(
+            status_code=202,
+            content={
+                "detail": "Image generation request is still processing, try again later."
+            },
+        )
+    elif db_image_request.status == Status.FAILED.name:
+        raise HTTPException(
+            status_code=500, detail="Image generation request failed, please try again."
+        )
+    elif db_image_request.status == Status.COMPLETED.name:
+        return {
+            "message": "Image generation request completed successfully.",
+            "id": str(db_image_request.id),
+            "response": db_image_request.response_data,
         }
-        return JSONResponse(status_code=202, content=response)
-    response = {
-        "message": "Image generation request completed successfully",
-        "id": str(db_image_request.id),
-        "response": db_image_request.response_data,
-    }
-    return JSONResponse(status_code=200, content=response)
+    else:
+        raise HTTPException(
+            status_code=500, detail="Unknown status of the image generation request."
+        )
