@@ -29,6 +29,7 @@ def update_database(message):
         logging.error(f"Entry with id {data['id']} not found")
         return
     entry.response_data = data["response"]
+    print(" status recived #########", data['status'])
     if data['status'] == 'failed':
         entry.status = Status.FAILED
     else:
