@@ -18,7 +18,7 @@ channel.queue_declare(queue=queue_name, durable=True)
 
 def on_response(ch, method, properties, body):
     update_database.delay(body.decode())
-    print(" [x] Received %r" % body, "asdvdvdv", body.decode())
+    print(" [x, y] Received %r" % body, "asdvdvdv", body.decode())
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
