@@ -26,11 +26,11 @@ def update_database(message):
     entry_service = EntryService(session)
     entry = entry_service.get_by_primary_key(data["id"])
     if entry is None:
-        logging.error(f"Entry with id {data['id']} not found")
+        logging.error(f'Entry with id {data["id"]} not found')
         return
     entry.response_data = data["response"]
     print(" status recived #########", data['status'])
-    if data['status'] == 'failed':
+    if data["status"] == 'failed':
         entry.status = Status.FAILED
     else:
         entry.status = Status.COMPLETED
