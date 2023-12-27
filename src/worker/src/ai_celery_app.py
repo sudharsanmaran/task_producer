@@ -97,7 +97,7 @@ def generate_image(
             image=image,
         ).images[0]
     except Exception as e:
-        raise ImageGenerationError(f'An exception occurred while generating image: {e}')
+        raise ImageGenerationError(f"An exception occurred while generating image: {e}")
 
     finally:
         del pipe
@@ -131,7 +131,9 @@ def upload_image_to_blob(byte_arr, name):
         blob_service_client = BlobServiceClient.from_connection_string(connect_str)
     except Exception as e:
         print(f"An exception occurred while creating BlobServiceClient: {e}")
-        return
+        raise ImageGenerationError(
+            f"An exception occurred while creating BlobServiceClient: {e}"
+        )
 
     # Get the existing container
     container_name = os.getenv("AZURE_CONTAINER_NAME")
@@ -141,7 +143,9 @@ def upload_image_to_blob(byte_arr, name):
         container_client = blob_service_client.get_container_client(container_name)
     except Exception as e:
         print(f"An exception occurred while getting container client: {e}")
-        return
+        raise ImageGenerationError(
+            f"An exception occurred while getting container client: {e}"
+        )
 
     try:
         # Ensure the name ends with .png
@@ -163,6 +167,9 @@ def upload_image_to_blob(byte_arr, name):
 
     except Exception as e:
         print(f"An exception occurred while uploading the file: {e}")
+        raise ImageGenerationError(
+            f"An exception occurred while uploading the file: {e}"
+        )
 
 
 def send_to_rabbitmq(obj, rabbitmq_host="rabbitmq", response_queue="image_response"):
@@ -222,19 +229,17 @@ def handle_img_gen_request(request):
         byte_arr = generate_image(
             prompt, height, width, num_inference_steps, guidance_scale, negative_prompt
         )
+        random_str = str(uuid.uuid4())
+        images_name = f"{os.getenv('BASE_NAME')}-{random_str}"
+
+        # Upload image to blob
+        image_url = upload_image_to_blob(byte_arr, images_name)
+
+        response_obj = {"response": image_url, "id": id, "status": "completed"}
+
+        send_to_rabbitmq(response_obj)
     except ImageGenerationError as e:
         logger.error(f"An exception occurred while generating image: {e}")
         response_obj = {"response": None, "id": id, "status": "failed"}
         send_to_rabbitmq(response_obj)
         return
-
-    random_str = str(uuid.uuid4())
-    images_name = f"{os.getenv('BASE_NAME')}-{random_str}"
-
-    # Upload image to blob
-    image_url = upload_image_to_blob(byte_arr, images_name)
-
-    response_obj = {"response": image_url, "id": id, "status": "completed"}
-
-    send_to_rabbitmq(response_obj)
-    return

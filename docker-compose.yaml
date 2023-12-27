@@ -43,7 +43,7 @@ services:
       dockerfile: Dockerfile
     container_name: eagle-bot-image-celery-worker
     image: eagle-bot-image-response-worker:V1.0.0
-    command: ["celery", "-A", "src.celery_app", "worker", "--loglevel=info"]
+    command: ["celery", "-A", "src.celery_app", "worker", "--loglevel=info", "--concurrency=1"]
     restart: on-failure
     depends_on:
       - rabbitmq
