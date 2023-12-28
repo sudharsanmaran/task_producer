@@ -97,7 +97,7 @@ async def get_image(request_id: str, service=Depends(get_entry_service)):
     if db_image_request is None:
         raise HTTPException(status_code=404, detail="Image request not found.")
 
-    if db_image_request.status == Status.PROCESSING.name:
+    if db_image_request.status == Status.PENDING.name:
         return JSONResponse(
             status_code=202,
             content={
