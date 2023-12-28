@@ -5,7 +5,9 @@ import logging
 import uuid
 from celery import Celery
 from io import BytesIO
+import cv2
 from dotenv import load_dotenv
+import numpy as np
 import pika
 from azure.storage.blob import BlobServiceClient
 from PIL import Image
@@ -42,6 +44,43 @@ class ImageGenerationError(Exception):
     pass
 
 
+def adjust_contrast_saturation_sharpness(
+    image, clip_limit=1.0, saturation_factor=1.5, sharpness_factor=0.5
+):
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+    h, s, v = cv2.split(hsv)
+
+    s = s.astype(np.float32)
+
+    s *= saturation_factor
+
+    s = np.clip(s, 0, 255)
+
+    s = s.astype(np.uint8)
+
+    hsv = cv2.merge([h, s, v])
+
+    bgr = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+
+    blurred = cv2.GaussianBlur(bgr, (0, 0), 3)
+    sharpened = cv2.addWeighted(
+        bgr, 1.0 + sharpness_factor, blurred, -sharpness_factor, 0
+    )
+
+    hsv_sharpened = cv2.cvtColor(sharpened, cv2.COLOR_BGR2HSV)
+
+    h_s, s_s, v_s = cv2.split(hsv_sharpened)
+
+    clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=(8, 8))
+
+    v_s = clahe.apply(v_s)
+
+    enhanced_hsv = cv2.merge([h_s, s_s, v_s])
+
+    return cv2.cvtColor(enhanced_hsv, cv2.COLOR_HSV2BGR)
+
+
 def generate_image(
     prompt,
     height=512,
@@ -49,17 +88,11 @@ def generate_image(
     num_inference_steps=50,
     guidance_scale=7.5,
     negative_prompt=None,
+    clip_limit=1.1,
+    saturation_factor=1.2,
+    sharpness_factor=0.1,
 ):
-    import torch
-    from diffusers import (
-        StableDiffusionPipeline,
-        EulerDiscreteScheduler,
-        DiffusionPipeline,
-    )
-    from diffusers.schedulers import DPMSolverMultistepScheduler
-
     try:
-        # Initialize Stable Diffusion model
         pipe = DiffusionPipeline.from_pretrained(
             "stabilityai/stable-diffusion-xl-base-1.0",
             torch_dtype=torch.float16,
@@ -96,6 +129,19 @@ def generate_image(
             denoising_start=high_noise_frac,
             image=image,
         ).images[0]
+
+        image_np = np.array(image)
+
+        image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+
+        adjusted_image_np = adjust_contrast_saturation_sharpness(
+            image_np, clip_limit, saturation_factor, sharpness_factor
+        )
+
+        adjusted_image = Image.fromarray(
+            cv2.cvtColor(adjusted_image_np, cv2.COLOR_BGR2RGB)
+        )
+
     except Exception as e:
         raise ImageGenerationError(f"An exception occurred while generating image: {e}")
 
@@ -104,9 +150,9 @@ def generate_image(
         del refiner
         torch.cuda.empty_cache()
 
-    # Convert image to bytes
+    # Convert adjusted image to bytes
     img_byte_arr = BytesIO()
-    image.save(img_byte_arr, format="PNG")
+    adjusted_image.save(img_byte_arr, format="PNG")
     img_byte_arr = img_byte_arr.getvalue()
 
     return img_byte_arr
