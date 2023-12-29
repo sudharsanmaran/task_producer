@@ -134,6 +134,7 @@ def generate_image(
             image=image,
         ).images[0]
         if enhance_image:
+            logger.info("Enhancing image")
             image_np = np.array(image)
 
             image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
