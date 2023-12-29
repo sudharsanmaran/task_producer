@@ -93,6 +93,9 @@ def generate_image(
     sharpness_factor=0.1,
 ):
     try:
+        from diffusers import DiffusionPipeline
+        import torch
+
         pipe = DiffusionPipeline.from_pretrained(
             "stabilityai/stable-diffusion-xl-base-1.0",
             torch_dtype=torch.float16,
