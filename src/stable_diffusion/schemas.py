@@ -18,6 +18,9 @@ class ImageRequest(BaseModel):
         35, description="Number of denoising steps", le=50, ge=1
     )
     guidance_scale: float = Field(5, description="", le=10, ge=1)
+    enhance_image: bool = Field(
+        True, description="Whether to apply contrast, saturation, and sharpness"
+    )
     webhook_url: Optional[str] = Field(
         None, description="Webhook url to send result to"
     )

@@ -91,6 +91,7 @@ def generate_image(
     clip_limit=1.1,
     saturation_factor=1.2,
     sharpness_factor=0.1,
+    enhance_image=False,
 ):
     try:
         from diffusers import DiffusionPipeline
@@ -132,18 +133,18 @@ def generate_image(
             denoising_start=high_noise_frac,
             image=image,
         ).images[0]
+        if enhance_image:
+            image_np = np.array(image)
 
-        image_np = np.array(image)
+            image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
 
-        image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+            adjusted_image_np = adjust_contrast_saturation_sharpness(
+                image_np, clip_limit, saturation_factor, sharpness_factor
+            )
 
-        adjusted_image_np = adjust_contrast_saturation_sharpness(
-            image_np, clip_limit, saturation_factor, sharpness_factor
-        )
-
-        adjusted_image = Image.fromarray(
-            cv2.cvtColor(adjusted_image_np, cv2.COLOR_BGR2RGB)
-        )
+            image = Image.fromarray(
+                cv2.cvtColor(adjusted_image_np, cv2.COLOR_BGR2RGB)
+            )
 
     except Exception as e:
         raise ImageGenerationError(f"An exception occurred while generating image: {e}")
@@ -155,7 +156,7 @@ def generate_image(
 
     # Convert adjusted image to bytes
     img_byte_arr = BytesIO()
-    adjusted_image.save(img_byte_arr, format="PNG")
+    image.save(img_byte_arr, format="PNG")
     img_byte_arr = img_byte_arr.getvalue()
 
     return img_byte_arr
@@ -271,12 +272,19 @@ def handle_img_gen_request(request):
     width = request_data["width"]
     num_inference_steps = request_data["num_inference_steps"]
     guidance_scale = request_data["guidance_scale"]
+    enhance_image = request_data["enhance_image"]
     negative_prompt = request_data["negative_prompt"]
 
     # Generate image URL
     try:
         byte_arr = generate_image(
-            prompt, height, width, num_inference_steps, guidance_scale, negative_prompt
+            prompt,
+            height,
+            width,
+            num_inference_steps,
+            guidance_scale,
+            negative_prompt,
+            enhance_image,
         )
         random_str = str(uuid.uuid4())
         images_name = f"{os.getenv('BASE_NAME')}-{random_str}"
