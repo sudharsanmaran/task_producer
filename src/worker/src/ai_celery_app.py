@@ -281,12 +281,12 @@ def handle_img_gen_request(request):
     # Generate image URL
     try:
         byte_arr = generate_image(
-            prompt,
-            height,
-            width,
-            num_inference_steps,
-            guidance_scale,
-            negative_prompt,
+            prompt=prompt,
+            height=height,
+            width=width,
+            num_inference_steps=num_inference_steps,
+            guidance_scale=guidance_scale,
+            negative_prompt=negative_prompt,
             enhance_image=enhance_image,
         )
         random_str = str(uuid.uuid4())
