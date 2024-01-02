@@ -134,6 +134,7 @@ def generate_image(
             denoising_start=high_noise_frac,
             image=image,
         ).images[0]
+        logger.error("enhance_image value", enhance_image)
         if enhance_image:
             logger.error("Enhancing image")
             image_np = np.array(image)
