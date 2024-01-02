@@ -93,6 +93,7 @@ def generate_image(
     saturation_factor=1.2,
     sharpness_factor=0.1,
     enhance_image=True,
+    seed=None,
 ):
     try:
         from diffusers import DiffusionPipeline
@@ -116,6 +117,11 @@ def generate_image(
         )
         refiner.to("cuda")
 
+        if seed is not None:
+            generator = torch.manual_seed(seed)
+        else:
+            generator = None
+
         high_noise_frac = 0.8
 
         image = pipe(
@@ -127,12 +133,14 @@ def generate_image(
             width=width,
             guidance_scale=guidance_scale,
             negative_prompt=negative_prompt,
+            generator=generator,
         ).images
         image = refiner(
             prompt=prompt,
             num_inference_steps=num_inference_steps,
             denoising_start=high_noise_frac,
             image=image,
+            generator=generator,
         ).images[0]
         print("enhance_image value", enhance_image)
         if enhance_image:
@@ -145,9 +153,7 @@ def generate_image(
                 image_np, clip_limit, saturation_factor, sharpness_factor
             )
 
-            image = Image.fromarray(
-                cv2.cvtColor(adjusted_image_np, cv2.COLOR_BGR2RGB)
-            )
+            image = Image.fromarray(cv2.cvtColor(adjusted_image_np, cv2.COLOR_BGR2RGB))
 
     except Exception as e:
         raise ImageGenerationError(f"An exception occurred while generating image: {e}")
@@ -277,6 +283,7 @@ def handle_img_gen_request(request):
     guidance_scale = request_data["guidance_scale"]
     enhance_image = request_data["enhance_image"]
     negative_prompt = request_data["negative_prompt"]
+    seed = request_data["seed"]
 
     # Generate image URL
     try:
@@ -288,6 +295,7 @@ def handle_img_gen_request(request):
             guidance_scale=guidance_scale,
             negative_prompt=negative_prompt,
             enhance_image=enhance_image,
+            seed=seed,
         )
         random_str = str(uuid.uuid4())
         images_name = f"{os.getenv('BASE_NAME')}-{random_str}"

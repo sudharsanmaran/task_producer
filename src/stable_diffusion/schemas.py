@@ -24,6 +24,9 @@ class ImageRequest(BaseModel):
     webhook_url: Optional[str] = Field(
         None, description="Webhook url to send result to"
     )
+    seed: Optional[int] = Field(
+        None, description="Seed for random number generator to ensure reproducibility"
+    )
 
     @field_validator("width", "height")
     def check_width(cls, v):
