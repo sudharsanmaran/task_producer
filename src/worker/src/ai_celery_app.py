@@ -47,7 +47,7 @@ class ImageGenerationError(Exception):
 def adjust_contrast_saturation_sharpness(
     image, clip_limit=1.0, saturation_factor=1.5, sharpness_factor=0.5
 ):
-    logging.debug("Adjusting contrast, saturation, and sharpness")
+    print("Adjusting contrast, saturation, and sharpness")
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     h, s, v = cv2.split(hsv)
@@ -134,9 +134,9 @@ def generate_image(
             denoising_start=high_noise_frac,
             image=image,
         ).images[0]
-        logger.debug("enhance_image value", enhance_image)
+        print("enhance_image value", enhance_image)
         if enhance_image:
-            logger.debug("Enhancing image")
+            print("Enhancing image")
             image_np = np.array(image)
 
             image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
