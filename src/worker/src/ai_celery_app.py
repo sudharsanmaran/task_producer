@@ -287,7 +287,7 @@ def handle_img_gen_request(request):
             num_inference_steps,
             guidance_scale,
             negative_prompt,
-            enhance_image,
+            enhance_image=enhance_image,
         )
         random_str = str(uuid.uuid4())
         images_name = f"{os.getenv('BASE_NAME')}-{random_str}"
