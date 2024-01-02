@@ -92,7 +92,7 @@ def generate_image(
     clip_limit=1.1,
     saturation_factor=1.2,
     sharpness_factor=0.1,
-    enhance_image=False,
+    enhance_image=True,
 ):
     try:
         from diffusers import DiffusionPipeline
