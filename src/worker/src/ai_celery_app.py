@@ -47,6 +47,7 @@ class ImageGenerationError(Exception):
 def adjust_contrast_saturation_sharpness(
     image, clip_limit=1.0, saturation_factor=1.5, sharpness_factor=0.5
 ):
+    logging.info("Adjusting contrast, saturation, and sharpness")
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     h, s, v = cv2.split(hsv)
